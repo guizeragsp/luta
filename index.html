@@ -1,202 +1,64 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <title>Jogo de Luta 2D - Golpes com Efeito</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: #111;
-      overflow: hidden;
-    }
-    #game {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      background: linear-gradient(#333, #111);
-    }
-    .fighter {
-      width: 50px;
-      height: 100px;
-      position: absolute;
-      bottom: 0;
-    }
-    #player1 { background: blue; left: 100px; }
-    #player2 { background: red; left: calc(100vw - 150px); }
-    .life-bar {
-      position: absolute;
-      top: 20px;
-      width: 40%;
-      height: 20px;
-      background: #555;
-      border: 2px solid white;
-    }
-    .life-fill {
-      height: 100%;
-      background: limegreen;
-    }
-    #life1 { left: 5%; }
-    #life2 { right: 5%; }
+<!-- ... (head e estilo mantidos como no anterior) ... -->
 
-    .hit-effect {
-      position: absolute;
-      width: 30px;
-      height: 30px;
-      background: radial-gradient(white, yellow, red);
-      border-radius: 50%;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease, transform 0.2s ease;
-      z-index: 10;
-    }
-  </style>
-</head>
-<body>
-  <div id="game">
-    <div id="player1" class="fighter"></div>
-    <div id="player2" class="fighter"></div>
+<script>
+  // elementos do jogo
+  const p1 = document.getElementById("player1");
+  const p2 = document.getElementById("player2");
+  const lifeFill1 = document.getElementById("lifeFill1");
+  const lifeFill2 = document.getElementById("lifeFill2");
+  const hitEffect1 = document.getElementById("hitEffect1");
+  const hitEffect2 = document.getElementById("hitEffect2");
 
-    <!-- Efeitos de golpe -->
-    <div id="hitEffect1" class="hit-effect"></div>
-    <div id="hitEffect2" class="hit-effect"></div>
+  // variáveis de posição e vida
+  let pos1 = 100, pos2 = window.innerWidth - 150;
+  let life1 = 100, life2 = 100;
+  let keys = {};
 
-    <!-- Barras de vida -->
-    <div id="life1" class="life-bar"><div id="lifeFill1" class="life-fill"></div></div>
-    <div id="life2" class="life-bar"><div id="lifeFill2" class="life-fill"></div></div>
-  </div>
+  // dados de pulo
+  let p1Jump = { vy: 0, vx: 0, y: 0, jumping: false };
+  let p2Jump = { vy: 0, vx: 0, y: 0, jumping: false };
 
-  <script>
-    const p1 = document.getElementById("player1");
-    const p2 = document.getElementById("player2");
-    const lifeFill1 = document.getElementById("lifeFill1");
-    const lifeFill2 = document.getElementById("lifeFill2");
+  const gravity = 0.4;
+  const jumpSpeed = 20;
+  const airSpeed = 3;
 
-    const hitEffect1 = document.getElementById("hitEffect1");
-    const hitEffect2 = document.getElementById("hitEffect2");
+  document.addEventListener("keydown", e => {
+    keys[e.key.toLowerCase()] = true;
+    e.preventDefault();
+  });
 
-    let pos1 = 100, pos2 = window.innerWidth - 150;
-    let life1 = 100, life2 = 100;
+  document.addEventListener("keyup", e => {
+    keys[e.key.toLowerCase()] = false;
+    e.preventDefault();
+  });
 
-    let keys = {};
+  function atacar(atacante, defensor, teclas, efeitos, golpes) {
+    for (let i = 0; i < teclas.length; i++) {
+      if (keys[teclas[i]]) {
+        keys[teclas[i]] = false;
 
-    let p1Jump = { vy: 0, vx: 0, y: 0, jumping: false };
-    let p2Jump = { vy: 0, vx: 0, y: 0, jumping: false };
+        const distancia = Math.abs(atacante.pos - defensor.pos);
+        const alcance = golpes[i].alcance;
+        const dano = golpes[i].dano;
 
-    const gravity = 0.4;
-    const jumpSpeed = 20;
-    const airSpeed = 3;
+        if (distancia < alcance) {
+          defensor.vida -= dano;
 
-    document.addEventListener("keydown", e => {
-      keys[e.key.toLowerCase()] = true;
-      e.preventDefault();
-    });
-
-    document.addEventListener("keyup", e => {
-      keys[e.key.toLowerCase()] = false;
-      e.preventDefault();
-    });
-
-    function update() {
-      // ===== Movimento jogador 1 =====
-      if (!p1Jump.jumping) {
-        if (keys["a"]) pos1 -= 4;
-        if (keys["d"]) pos1 += 4;
-      }
-
-      if (!p1Jump.jumping && keys["w"]) {
-        p1Jump.vy = jumpSpeed;
-        p1Jump.jumping = true;
-        p1Jump.vx = keys["d"] ? airSpeed : keys["a"] ? -airSpeed : 0;
-      }
-
-      if (p1Jump.jumping) {
-        p1Jump.vy -= gravity;
-        p1Jump.y += p1Jump.vy;
-        pos1 += p1Jump.vx;
-        if (p1Jump.y <= 0) {
-          p1Jump.y = 0;
-          p1Jump.jumping = false;
-          p1Jump.vx = 0;
+          efeitos.style.left = (defensor.pos + 10) + "px";
+          efeitos.style.bottom = (defensor.jump.y + 60) + "px";
+          efeitos.style.opacity = 1;
+          efeitos.style.transform = "scale(1.5)";
+          setTimeout(() => {
+            efeitos.style.opacity = 0;
+          }, 200);
         }
-        p1.style.bottom = p1Jump.y + "px";
       }
-
-      // ===== Movimento jogador 2 =====
-      if (!p2Jump.jumping) {
-        if (keys["arrowleft"]) pos2 -= 4;
-        if (keys["arrowright"]) pos2 += 4;
-      }
-
-      if (!p2Jump.jumping && keys["arrowup"]) {
-        p2Jump.vy = jumpSpeed;
-        p2Jump.jumping = true;
-        p2Jump.vx = keys["arrowright"] ? airSpeed : keys["arrowleft"] ? -airSpeed : 0;
-      }
-
-      if (p2Jump.jumping) {
-        p2Jump.vy -= gravity;
-        p2Jump.y += p2Jump.vy;
-        pos2 += p2Jump.vx;
-        if (p2Jump.y <= 0) {
-          p2Jump.y = 0;
-          p2Jump.jumping = false;
-          p2Jump.vx = 0;
-        }
-        p2.style.bottom = p2Jump.y + "px";
-      }
-
-      // Limites da tela
-      pos1 = Math.max(0, Math.min(pos1, window.innerWidth - 50));
-      pos2 = Math.max(0, Math.min(pos2, window.innerWidth - 50));
-
-      // Atualiza posições
-      p1.style.left = pos1 + "px";
-      p2.style.left = pos2 + "px";
-
-      // === ATAQUES JOGADOR 1 ===
-      if (keys["f"] || keys["g"] || keys["v"] || keys["b"]) {
-        life2 -= 5;
-        keys["f"] = keys["g"] = keys["v"] = keys["b"] = false;
-
-        hitEffect2.style.left = (pos2 + 10) + "px";
-        hitEffect2.style.bottom = (p2Jump.y + 60) + "px";
-        hitEffect2.style.opacity = 1;
-        hitEffect2.style.transform = "scale(1.5)";
-        setTimeout(() => {
-          hitEffect2.style.opacity = 0;
-        }, 200);
-      }
-
-      // === ATAQUES JOGADOR 2 ===
-      if (keys["1"] || keys["2"] || keys["3"] || keys["4"]) {
-        life1 -= 5;
-        keys["1"] = keys["2"] = keys["3"] = keys["4"] = false;
-
-        hitEffect1.style.left = (pos1 + 10) + "px";
-        hitEffect1.style.bottom = (p1Jump.y + 60) + "px";
-        hitEffect1.style.opacity = 1;
-        hitEffect1.style.transform = "scale(1.5)";
-        setTimeout(() => {
-          hitEffect1.style.opacity = 0;
-        }, 200);
-      }
-
-      // Atualiza barras de vida
-      life1 = Math.max(0, life1);
-      life2 = Math.max(0, life2);
-      lifeFill1.style.width = life1 + "%";
-      lifeFill2.style.width = life2 + "%";
-
-      if (life1 <= 0 || life2 <= 0) {
-        alert(life1 <= 0 ? "Jogador 2 venceu!" : "Jogador 1 venceu!");
-        location.reload();
-      }
-
-      requestAnimationFrame(update);
     }
+  }
 
-    update();
-  </script>
-</body>
-</html>
+  function update() {
+    // MOVIMENTO P1
+    if (!p1Jump.jumping) {
+      if (keys["a"]) pos1 -= 4;
+      if (keys["d"]) pos1 += 4;
+    }
