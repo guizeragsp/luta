@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Jogo de Luta 2D</title>
+  <title>Jogo de Luta 2D com Pulo</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -23,6 +23,7 @@
       height: 100px;
       position: absolute;
       bottom: 0;
+      transition: left 0.05s linear;
     }
     #player1 {
       background: blue;
@@ -62,46 +63,129 @@
     const lifeFill1 = document.getElementById("lifeFill1");
     const lifeFill2 = document.getElementById("lifeFill2");
 
+    // Posições iniciais
     let pos1 = 100;
     let pos2 = window.innerWidth - 150;
+
+    // Vida dos jogadores
     let life1 = 100;
     let life2 = 100;
+
+    // Estado do pulo dos jogadores
+    let p1State = { vy: 0, jumping: false };
+    let p2State = { vy: 0, jumping: false };
+
+    const gravity = 0.8;
+    const jumpSpeed = 15;
+
     let keys = {};
 
-    document.addEventListener("keydown", e => keys[e.key] = true);
-    document.addEventListener("keyup", e => keys[e.key] = false);
+    document.addEventListener("keydown", e => {
+      keys[e.key.toLowerCase()] = true;
+      e.preventDefault();
+    });
+
+    document.addEventListener("keyup", e => {
+      keys[e.key.toLowerCase()] = false;
+      e.preventDefault();
+    });
 
     function update() {
-      // Movimentação
+      // --- Jogador 1 ---
+
+      // Movimento lateral (não permite sair da tela)
       if (keys["a"]) pos1 -= 4;
       if (keys["d"]) pos1 += 4;
-      if (keys["ArrowLeft"]) pos2 -= 4;
-      if (keys["ArrowRight"]) pos2 += 4;
+      pos1 = Math.max(0, Math.min(pos1, window.innerWidth - 50));
 
-      // Ataques
+      // Pulo jogador 1
+      if (!p1State.jumping && keys["w"]) {
+        p1State.vy = jumpSpeed;
+        p1State.jumping = true;
+      }
+
+      // Se está pulando, atualiza posição vertical e horizontal
+      if (p1State.jumping) {
+        // Subida/descida
+        p1State.vy -= gravity;
+        let newBottom = (p1.offsetTop || 0) + p1State.vy;
+
+        // Atualiza bottom do jogador 1
+        let currentBottom = parseFloat(p1.style.bottom) || 0;
+        let nextBottom = currentBottom + p1State.vy;
+
+        if (nextBottom <= 0) {
+          // Chegou no chão
+          p1State.jumping = false;
+          p1State.vy = 0;
+          p1.style.bottom = "0px";
+        } else {
+          p1.style.bottom = nextBottom + "px";
+        }
+
+        // Movimento horizontal durante o pulo
+        if (keys["d"]) pos1 += 3; // pulo pra frente
+        if (keys["a"]) pos1 -= 3; // pulo pra trás
+        pos1 = Math.max(0, Math.min(pos1, window.innerWidth - 50));
+      }
+
+      // --- Jogador 2 ---
+
+      // Movimento lateral
+      if (keys["arrowleft"]) pos2 -= 4;
+      if (keys["arrowright"]) pos2 += 4;
+      pos2 = Math.max(0, Math.min(pos2, window.innerWidth - 50));
+
+      // Pulo jogador 2
+      if (!p2State.jumping && keys["arrowup"]) {
+        p2State.vy = jumpSpeed;
+        p2State.jumping = true;
+      }
+
+      if (p2State.jumping) {
+        p2State.vy -= gravity;
+        let currentBottom = parseFloat(p2.style.bottom) || 0;
+        let nextBottom = currentBottom + p2State.vy;
+
+        if (nextBottom <= 0) {
+          p2State.jumping = false;
+          p2State.vy = 0;
+          p2.style.bottom = "0px";
+        } else {
+          p2.style.bottom = nextBottom + "px";
+        }
+
+        // Movimento horizontal durante o pulo
+        if (keys["arrowright"]) pos2 += 3;
+        if (keys["arrowleft"]) pos2 -= 3;
+        pos2 = Math.max(0, Math.min(pos2, window.innerWidth - 50));
+      }
+
+      // Atualiza posições horizontais
+      p1.style.left = pos1 + "px";
+      p2.style.left = pos2 + "px";
+
+      // Ataques jogador 1
       if (keys["f"]) { life2 -= 5; keys["f"] = false; }
       if (keys["g"]) { life2 -= 10; keys["g"] = false; }
       if (keys["v"]) { life2 -= 7; keys["v"] = false; }
       if (keys["b"]) { life2 -= 12; keys["b"] = false; }
 
+      // Ataques jogador 2
       if (keys["1"]) { life1 -= 5; keys["1"] = false; }
       if (keys["2"]) { life1 -= 10; keys["2"] = false; }
       if (keys["3"]) { life1 -= 7; keys["3"] = false; }
       if (keys["4"]) { life1 -= 12; keys["4"] = false; }
 
-      // Limites e fim do jogo
-      pos1 = Math.max(0, Math.min(pos1, window.innerWidth - 50));
-      pos2 = Math.max(0, Math.min(pos2, window.innerWidth - 50));
+      // Limites de vida
       life1 = Math.max(0, life1);
       life2 = Math.max(0, life2);
 
-      // Atualiza posições e vida
-      p1.style.left = pos1 + "px";
-      p2.style.left = pos2 + "px";
+      // Atualiza barras de vida
       lifeFill1.style.width = life1 + "%";
       lifeFill2.style.width = life2 + "%";
 
-      // Vencedor
+      // Verifica vencedor
       if (life1 <= 0 || life2 <= 0) {
         alert(life1 <= 0 ? "Jogador 2 venceu!" : "Jogador 1 venceu!");
         location.reload();
@@ -109,6 +193,10 @@
 
       requestAnimationFrame(update);
     }
+
+    // Inicializa posição bottom para ambos lutadores
+    p1.style.bottom = "0px";
+    p2.style.bottom = "0px";
 
     update();
   </script>
