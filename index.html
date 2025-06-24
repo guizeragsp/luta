@@ -2,39 +2,28 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Jogo de Luta 2D - Pulo com Impulso</title>
+  <title>Pulo em Arco - Jogo de Luta</title>
   <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
       background: #111;
-      color: white;
-      font-family: sans-serif;
       overflow: hidden;
     }
     #game {
       position: relative;
       width: 100vw;
       height: 100vh;
-      background: linear-gradient(#444, #222);
+      background: linear-gradient(#333, #111);
     }
     .fighter {
       width: 50px;
       height: 100px;
       position: absolute;
       bottom: 0;
-      transition: left 0.05s linear;
     }
-    #player1 {
-      background: blue;
-      left: 100px;
-      bottom: 0;
-    }
-    #player2 {
-      background: red;
-      left: calc(100vw - 150px);
-      bottom: 0;
-    }
+    #player1 { background: blue; left: 100px; }
+    #player2 { background: red; left: calc(100vw - 150px); }
     .life-bar {
       position: absolute;
       top: 20px;
@@ -65,12 +54,126 @@
     const lifeFill1 = document.getElementById("lifeFill1");
     const lifeFill2 = document.getElementById("lifeFill2");
 
-    let pos1 = 100;
-    let pos2 = window.innerWidth - 150;
-    let life1 = 100;
-    let life2 = 100;
+    let pos1 = 100, pos2 = window.innerWidth - 150;
+    let life1 = 100, life2 = 100;
 
     let keys = {};
 
-    let p1Jump = { vy: 0, y: 0, jumping: false };
-    let p
+    // Jogador 1
+    let p1Jump = { vy: 0, vx: 0, y: 0, jumping: false };
+    // Jogador 2
+    let p2Jump = { vy: 0, vx: 0, y: 0, jumping: false };
+
+    const gravity = 0.4;
+    const jumpSpeed = 20;
+    const airSpeed = 3;
+
+    document.addEventListener("keydown", e => {
+      keys[e.key.toLowerCase()] = true;
+      e.preventDefault();
+    });
+
+    document.addEventListener("keyup", e => {
+      keys[e.key.toLowerCase()] = false;
+      e.preventDefault();
+    });
+
+    function update() {
+      // ===== MOVIMENTO JOGADOR 1 =====
+      if (!p1Jump.jumping) {
+        if (keys["a"]) pos1 -= 4;
+        if (keys["d"]) pos1 += 4;
+      }
+
+      // Pulo em arco - Jogador 1
+      if (!p1Jump.jumping && keys["w"]) {
+        p1Jump.vy = jumpSpeed;
+        p1Jump.jumping = true;
+
+        if (keys["d"]) p1Jump.vx = airSpeed;
+        else if (keys["a"]) p1Jump.vx = -airSpeed;
+        else p1Jump.vx = 0;
+      }
+
+      if (p1Jump.jumping) {
+        p1Jump.vy -= gravity;
+        p1Jump.y += p1Jump.vy;
+        pos1 += p1Jump.vx;
+
+        if (p1Jump.y <= 0) {
+          p1Jump.y = 0;
+          p1Jump.vy = 0;
+          p1Jump.vx = 0;
+          p1Jump.jumping = false;
+        }
+
+        p1.style.bottom = p1Jump.y + "px";
+      }
+
+      // ===== MOVIMENTO JOGADOR 2 =====
+      if (!p2Jump.jumping) {
+        if (keys["arrowleft"]) pos2 -= 4;
+        if (keys["arrowright"]) pos2 += 4;
+      }
+
+      // Pulo em arco - Jogador 2
+      if (!p2Jump.jumping && keys["arrowup"]) {
+        p2Jump.vy = jumpSpeed;
+        p2Jump.jumping = true;
+
+        if (keys["arrowright"]) p2Jump.vx = airSpeed;
+        else if (keys["arrowleft"]) p2Jump.vx = -airSpeed;
+        else p2Jump.vx = 0;
+      }
+
+      if (p2Jump.jumping) {
+        p2Jump.vy -= gravity;
+        p2Jump.y += p2Jump.vy;
+        pos2 += p2Jump.vx;
+
+        if (p2Jump.y <= 0) {
+          p2Jump.y = 0;
+          p2Jump.vy = 0;
+          p2Jump.vx = 0;
+          p2Jump.jumping = false;
+        }
+
+        p2.style.bottom = p2Jump.y + "px";
+      }
+
+      // Limites da tela
+      pos1 = Math.max(0, Math.min(pos1, window.innerWidth - 50));
+      pos2 = Math.max(0, Math.min(pos2, window.innerWidth - 50));
+
+      // Atualiza posições
+      p1.style.left = pos1 + "px";
+      p2.style.left = pos2 + "px";
+
+      // ATAQUES
+      if (keys["f"]) { life2 -= 5; keys["f"] = false; }
+      if (keys["g"]) { life2 -= 10; keys["g"] = false; }
+      if (keys["v"]) { life2 -= 7; keys["v"] = false; }
+      if (keys["b"]) { life2 -= 12; keys["b"] = false; }
+
+      if (keys["1"]) { life1 -= 5; keys["1"] = false; }
+      if (keys["2"]) { life1 -= 10; keys["2"] = false; }
+      if (keys["3"]) { life1 -= 7; keys["3"] = false; }
+      if (keys["4"]) { life1 -= 12; keys["4"] = false; }
+
+      life1 = Math.max(0, life1);
+      life2 = Math.max(0, life2);
+      lifeFill1.style.width = life1 + "%";
+      lifeFill2.style.width = life2 + "%";
+
+      if (life1 <= 0 || life2 <= 0) {
+        alert(life1 <= 0 ? "Jogador 2 venceu!" : "Jogador 1 venceu!");
+        location.reload();
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    update();
+  </script>
+</body>
+</html>
