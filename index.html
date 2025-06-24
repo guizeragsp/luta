@@ -21,6 +21,7 @@
       height: 100px;
       position: absolute;
       bottom: 0;
+      transition: background-color 0.2s;
     }
     #player1 { background: blue; left: 100px; }
     #player2 { background: red; left: calc(100vw - 150px); }
@@ -35,6 +36,7 @@
     .life-fill {
       height: 100%;
       background: limegreen;
+      transition: width 0.3s ease;
     }
     #life1 { left: 5%; }
     #life2 { right: 5%; }
@@ -43,7 +45,7 @@
       position: absolute;
       width: 30px;
       height: 30px;
-      background: radial-gradient(white, yellow, red);
+      background: radial-gradient(circle, white, yellow, red);
       border-radius: 50%;
       opacity: 0;
       pointer-events: none;
@@ -81,4 +83,136 @@
 
     const gravity = 0.4;
     const jumpSpeed = 20;
-    const airSpeed = 3
+    const airSpeed = 3;
+
+    document.addEventListener("keydown", e => {
+      keys[e.key.toLowerCase()] = true;
+      e.preventDefault();
+    });
+
+    document.addEventListener("keyup", e => {
+      keys[e.key.toLowerCase()] = false;
+      e.preventDefault();
+    });
+
+    function atacar(atacante, defensor, teclas, efeitos, golpes) {
+      for (let i = 0; i < teclas.length; i++) {
+        if (keys[teclas[i]]) {
+          keys[teclas[i]] = false;
+
+          const distancia = Math.abs(atacante.pos - defensor.pos);
+          const alcance = golpes[i].alcance;
+          const dano = golpes[i].dano;
+
+          if (distancia < alcance) {
+            defensor.vida -= dano;
+
+            efeitos.style.left = (defensor.pos + 10) + "px";
+            efeitos.style.bottom = (defensor.jump.y + 60) + "px";
+            efeitos.style.opacity = 1;
+            efeitos.style.transform = "scale(1.5)";
+            setTimeout(() => {
+              efeitos.style.opacity = 0;
+            }, 200);
+          }
+        }
+      }
+    }
+
+    function update() {
+      // Movimento jogador 1
+      if (!p1Jump.jumping) {
+        if (keys["a"]) pos1 -= 4;
+        if (keys["d"]) pos1 += 4;
+      }
+      if (!p1Jump.jumping && keys["w"]) {
+        p1Jump.vy = jumpSpeed;
+        p1Jump.jumping = true;
+        p1Jump.vx = keys["d"] ? airSpeed : keys["a"] ? -airSpeed : 0;
+      }
+      if (p1Jump.jumping) {
+        p1Jump.vy -= gravity;
+        p1Jump.y += p1Jump.vy;
+        pos1 += p1Jump.vx;
+        if (p1Jump.y <= 0) {
+          p1Jump.y = 0;
+          p1Jump.jumping = false;
+          p1Jump.vx = 0;
+        }
+        p1.style.bottom = p1Jump.y + "px";
+      }
+
+      // Movimento jogador 2
+      if (!p2Jump.jumping) {
+        if (keys["arrowleft"]) pos2 -= 4;
+        if (keys["arrowright"]) pos2 += 4;
+      }
+      if (!p2Jump.jumping && keys["arrowup"]) {
+        p2Jump.vy = jumpSpeed;
+        p2Jump.jumping = true;
+        p2Jump.vx = keys["arrowright"] ? airSpeed : keys["arrowleft"] ? -airSpeed : 0;
+      }
+      if (p2Jump.jumping) {
+        p2Jump.vy -= gravity;
+        p2Jump.y += p2Jump.vy;
+        pos2 += p2Jump.vx;
+        if (p2Jump.y <= 0) {
+          p2Jump.y = 0;
+          p2Jump.jumping = false;
+          p2Jump.vx = 0;
+        }
+        p2.style.bottom = p2Jump.y + "px";
+      }
+
+      // Limites da tela
+      pos1 = Math.max(0, Math.min(pos1, window.innerWidth - 50));
+      pos2 = Math.max(0, Math.min(pos2, window.innerWidth - 50));
+
+      // Atualiza posições
+      p1.style.left = pos1 + "px";
+      p2.style.left = pos2 + "px";
+
+      // Ataques com distância e dano diferentes
+      atacar(
+        { pos: pos1, jump: p1Jump },
+        { pos: pos2, jump: p2Jump, vida: life2 },
+        ["f", "g", "v", "b"],
+        hitEffect2,
+        [
+          { alcance: 40, dano: 5 },  // Soco fraco
+          { alcance: 50, dano: 10 }, // Soco forte
+          { alcance: 60, dano: 7 },  // Chute fraco
+          { alcance: 80, dano: 12 }  // Chute forte
+        ]
+      );
+      atacar(
+        { pos: pos2, jump: p2Jump },
+        { pos: pos1, jump: p1Jump, vida: life1 },
+        ["1", "2", "3", "4"],
+        hitEffect1,
+        [
+          { alcance: 40, dano: 5 },
+          { alcance: 50, dano: 10 },
+          { alcance: 60, dano: 7 },
+          { alcance: 80, dano: 12 }
+        ]
+      );
+
+      // Atualiza barras de vida
+      life1 = Math.max(0, life1);
+      life2 = Math.max(0, life2);
+      lifeFill1.style.width = life1 + "%";
+      lifeFill2.style.width = life2 + "%";
+
+      if (life1 <= 0 || life2 <= 0) {
+        alert(life1 <= 0 ? "Jogador 2 venceu!" : "Jogador 1 venceu!");
+        location.reload();
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    update();
+  </script>
+</body>
+</html>
