@@ -1,64 +1,84 @@
-<!-- ... (head e estilo mantidos como no anterior) ... -->
-
-<script>
-  // elementos do jogo
-  const p1 = document.getElementById("player1");
-  const p2 = document.getElementById("player2");
-  const lifeFill1 = document.getElementById("lifeFill1");
-  const lifeFill2 = document.getElementById("lifeFill2");
-  const hitEffect1 = document.getElementById("hitEffect1");
-  const hitEffect2 = document.getElementById("hitEffect2");
-
-  // variáveis de posição e vida
-  let pos1 = 100, pos2 = window.innerWidth - 150;
-  let life1 = 100, life2 = 100;
-  let keys = {};
-
-  // dados de pulo
-  let p1Jump = { vy: 0, vx: 0, y: 0, jumping: false };
-  let p2Jump = { vy: 0, vx: 0, y: 0, jumping: false };
-
-  const gravity = 0.4;
-  const jumpSpeed = 20;
-  const airSpeed = 3;
-
-  document.addEventListener("keydown", e => {
-    keys[e.key.toLowerCase()] = true;
-    e.preventDefault();
-  });
-
-  document.addEventListener("keyup", e => {
-    keys[e.key.toLowerCase()] = false;
-    e.preventDefault();
-  });
-
-  function atacar(atacante, defensor, teclas, efeitos, golpes) {
-    for (let i = 0; i < teclas.length; i++) {
-      if (keys[teclas[i]]) {
-        keys[teclas[i]] = false;
-
-        const distancia = Math.abs(atacante.pos - defensor.pos);
-        const alcance = golpes[i].alcance;
-        const dano = golpes[i].dano;
-
-        if (distancia < alcance) {
-          defensor.vida -= dano;
-
-          efeitos.style.left = (defensor.pos + 10) + "px";
-          efeitos.style.bottom = (defensor.jump.y + 60) + "px";
-          efeitos.style.opacity = 1;
-          efeitos.style.transform = "scale(1.5)";
-          setTimeout(() => {
-            efeitos.style.opacity = 0;
-          }, 200);
-        }
-      }
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Jogo de Luta 2D - Golpes com Distância</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #111;
+      overflow: hidden;
     }
-  }
-
-  function update() {
-    // MOVIMENTO P1
-    if (!p1Jump.jumping) {
-      if (keys["a"]) pos1 -= 4;
-      if (keys["d"]) pos1 += 4;
+    #game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(#333, #111);
     }
+    .fighter {
+      width: 50px;
+      height: 100px;
+      position: absolute;
+      bottom: 0;
+    }
+    #player1 { background: blue; left: 100px; }
+    #player2 { background: red; left: calc(100vw - 150px); }
+    .life-bar {
+      position: absolute;
+      top: 20px;
+      width: 40%;
+      height: 20px;
+      background: #555;
+      border: 2px solid white;
+    }
+    .life-fill {
+      height: 100%;
+      background: limegreen;
+    }
+    #life1 { left: 5%; }
+    #life2 { right: 5%; }
+
+    .hit-effect {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background: radial-gradient(white, yellow, red);
+      border-radius: 50%;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <div id="player1" class="fighter"></div>
+    <div id="player2" class="fighter"></div>
+
+    <div id="hitEffect1" class="hit-effect"></div>
+    <div id="hitEffect2" class="hit-effect"></div>
+
+    <div id="life1" class="life-bar"><div id="lifeFill1" class="life-fill"></div></div>
+    <div id="life2" class="life-bar"><div id="lifeFill2" class="life-fill"></div></div>
+  </div>
+
+  <script>
+    const p1 = document.getElementById("player1");
+    const p2 = document.getElementById("player2");
+    const lifeFill1 = document.getElementById("lifeFill1");
+    const lifeFill2 = document.getElementById("lifeFill2");
+    const hitEffect1 = document.getElementById("hitEffect1");
+    const hitEffect2 = document.getElementById("hitEffect2");
+
+    let pos1 = 100, pos2 = window.innerWidth - 150;
+    let life1 = 100, life2 = 100;
+    let keys = {};
+
+    let p1Jump = { vy: 0, vx: 0, y: 0, jumping: false };
+    let p2Jump = { vy: 0, vx: 0, y: 0, jumping: false };
+
+    const gravity = 0.4;
+    const jumpSpeed = 20;
+    const airSpeed = 3
