@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Jogo de Luta 2D - Boneco com Partes e Golpes</title>
+  <title>Jogo de Luta 2D - Golpes com Animação</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -15,81 +15,76 @@
       width: 100vw;
       height: 100vh;
       background: linear-gradient(#333, #111);
-      overflow: hidden;
     }
     .fighter {
-      position: absolute;
-      bottom: 0;
       width: 50px;
       height: 100px;
-      user-select: none;
-      /* para futuros efeitos, sombra etc */
-    }
-    /* Partes do boneco */
-    .head {
-      position: absolute;
-      top: -35px;
-      left: 5px;
-      width: 40px;
-      height: 40px;
-      background: #ccc;
-      border-radius: 50%;
-      z-index: 4;
-      box-shadow: inset 0 0 10px #999;
-    }
-    .body {
       position: absolute;
       bottom: 0;
-      left: 0;
+      transition: background-color 0.2s;
+      /* Para facilitar posicionar braços e pernas */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    #player1 { background: blue; left: 100px; }
+    #player2 { background: red; left: calc(100vw - 150px); }
+
+    /* Corpo (tronco) */
+    .body {
       width: 50px;
-      height: 60px;
-      border-radius: 5px;
-      box-shadow: inset 0 0 10px #444;
-      z-index: 3;
-    }
-    .arm-left, .arm-right {
-      position: absolute;
-      top: 10px;
-      width: 15px;
-      height: 50px;
+      height: 100px;
+      position: relative;
+      background: inherit;
       border-radius: 8px;
-      z-index: 5;
-      transform-origin: top center;
-      transition: transform 0.2s;
     }
-    .arm-left {
-      left: -15px;
-      /* cor será definida via classe do player */
+
+    /* Braços e pernas como elementos absolutos */
+    .arm-right, .arm-left {
+      position: absolute;
+      width: 12px;
+      height: 40px;
+      background: inherit;
+      top: 20px;
+      border-radius: 8px;
+      transform-origin: top center;
     }
     .arm-right {
-      right: -15px;
+      right: -10px;
     }
-    .leg-left, .leg-right {
+    .arm-left {
+      left: -10px;
+    }
+
+    .leg-right, .leg-left {
       position: absolute;
-      bottom: 0;
-      width: 20px;
+      width: 14px;
       height: 50px;
-      border-radius: 8px;
-      z-index: 2;
-      transition: transform 0.2s;
-    }
-    .leg-left {
-      left: 5px;
+      background: inherit;
+      bottom: 0;
+      border-radius: 10px;
+      transform-origin: top center;
     }
     .leg-right {
       right: 5px;
     }
-
-    /* Cores dos jogadores */
-    #player1 .body, #player1 .arm-left, #player1 .arm-right, #player1 .leg-left, #player1 .leg-right {
-      background: blue;
-      box-shadow: inset 0 0 10px #0000cc;
-    }
-    #player2 .body, #player2 .arm-left, #player2 .arm-right, #player2 .leg-left, #player2 .leg-right {
-      background: red;
-      box-shadow: inset 0 0 10px #cc0000;
+    .leg-left {
+      left: 5px;
     }
 
+    .head {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: inherit;
+      border-radius: 50%;
+      top: -40px;
+      left: 5px;
+      border: 2px solid white;
+    }
+
+    /* Barra de vida */
     .life-bar {
       position: absolute;
       top: 20px;
@@ -106,6 +101,7 @@
     #life1 { left: 5%; }
     #life2 { right: 5%; }
 
+    /* Efeito de hit */
     .hit-effect {
       position: absolute;
       width: 30px;
@@ -117,11 +113,31 @@
       transition: opacity 0.2s ease, transform 0.2s ease;
       z-index: 10;
     }
+
+    /* Animações simples para braços e pernas */
+
+    .arm-attack {
+      animation: arm-punch 0.3s forwards;
+    }
+    @keyframes arm-punch {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(-60deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    .leg-attack {
+      animation: leg-kick 0.3s forwards;
+    }
+    @keyframes leg-kick {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(-45deg); }
+      100% { transform: rotate(0deg); }
+    }
   </style>
 </head>
 <body>
   <div id="game">
-    <div id="player1" class="fighter" style="left: 100px;">
+    <div id="player1" class="fighter">
       <div class="head"></div>
       <div class="body"></div>
       <div class="arm-left"></div>
@@ -129,7 +145,8 @@
       <div class="leg-left"></div>
       <div class="leg-right"></div>
     </div>
-    <div id="player2" class="fighter" style="left: calc(100vw - 150px);">
+
+    <div id="player2" class="fighter">
       <div class="head"></div>
       <div class="body"></div>
       <div class="arm-left"></div>
@@ -172,7 +189,7 @@
       e.preventDefault();
     });
 
-    function atacar(atacante, defensor, teclas, efeitos, golpes) {
+    function atacar(atacante, defensor, teclas, efeitos, golpes, playerElement) {
       for (let i = 0; i < teclas.length; i++) {
         if (keys[teclas[i]]) {
           keys[teclas[i]] = false;
@@ -180,6 +197,20 @@
           const distancia = Math.abs(atacante.pos - defensor.pos);
           const alcance = golpes[i].alcance;
           const dano = golpes[i].dano;
+
+          const isSoco = (i === 0 || i === 1);
+          const isChute = (i === 2 || i === 3);
+
+          if (isSoco) {
+            const arm = playerElement.querySelector(".arm-right");
+            arm.classList.add("arm-attack");
+            setTimeout(() => arm.classList.remove("arm-attack"), 300);
+          }
+          if (isChute) {
+            const leg = playerElement.querySelector(".leg-right");
+            leg.classList.add("leg-attack");
+            setTimeout(() => leg.classList.remove("leg-attack"), 300);
+          }
 
           if (distancia < alcance) {
             defensor.vida -= dano;
@@ -261,7 +292,8 @@
           { alcance: 50, dano: 10 }, // Soco forte
           { alcance: 60, dano: 7 },  // Chute fraco
           { alcance: 80, dano: 12 }  // Chute forte
-        ]
+        ],
+        p1
       );
       atacar(
         player2,
@@ -273,7 +305,8 @@
           { alcance: 50, dano: 10 },
           { alcance: 60, dano: 7 },
           { alcance: 80, dano: 12 }
-        ]
+        ],
+        p2
       );
 
       // Atualiza barras de vida
