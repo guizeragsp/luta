@@ -1,327 +1,89 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <title>Jogo de Luta 2D - Golpes com Animação</title>
+  <meta charset="UTF-8">
+  <title>Jogo de Luta - Personagem Correndo</title>
   <style>
-    * { box-sizing: border-box; }
     body {
       margin: 0;
       background: #111;
-      overflow: hidden;
-    }
-    #game {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      background: linear-gradient(#333, #111);
-    }
-    .fighter {
-      width: 50px;
-      height: 100px;
-      position: absolute;
-      bottom: 0;
-      transition: background-color 0.2s;
-      /* Para facilitar posicionar braços e pernas */
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
-      justify-content: flex-start;
-    }
-    #player1 { background: blue; left: 100px; }
-    #player2 { background: red; left: calc(100vw - 150px); }
-
-    /* Corpo (tronco) */
-    .body {
-      width: 50px;
-      height: 100px;
-      position: relative;
-      background: inherit;
-      border-radius: 8px;
+      height: 100vh;
     }
 
-    /* Braços e pernas como elementos absolutos */
-    .arm-right, .arm-left {
-      position: absolute;
-      width: 12px;
-      height: 40px;
-      background: inherit;
-      top: 20px;
-      border-radius: 8px;
-      transform-origin: top center;
-    }
-    .arm-right {
-      right: -10px;
-    }
-    .arm-left {
-      left: -10px;
-    }
-
-    .leg-right, .leg-left {
-      position: absolute;
-      width: 14px;
-      height: 50px;
-      background: inherit;
-      bottom: 0;
-      border-radius: 10px;
-      transform-origin: top center;
-    }
-    .leg-right {
-      right: 5px;
-    }
-    .leg-left {
-      left: 5px;
-    }
-
-    .head {
-      position: absolute;
-      width: 40px;
-      height: 40px;
-      background: inherit;
-      border-radius: 50%;
-      top: -40px;
-      left: 5px;
-      border: 2px solid white;
-    }
-
-    /* Barra de vida */
-    .life-bar {
-      position: absolute;
-      top: 20px;
-      width: 40%;
-      height: 20px;
-      background: #555;
-      border: 2px solid white;
-    }
-    .life-fill {
-      height: 100%;
-      background: limegreen;
-      transition: width 0.3s ease;
-    }
-    #life1 { left: 5%; }
-    #life2 { right: 5%; }
-
-    /* Efeito de hit */
-    .hit-effect {
-      position: absolute;
-      width: 30px;
-      height: 30px;
-      background: radial-gradient(circle, white, yellow, red);
-      border-radius: 50%;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease, transform 0.2s ease;
-      z-index: 10;
-    }
-
-    /* Animações simples para braços e pernas */
-
-    .arm-attack {
-      animation: arm-punch 0.3s forwards;
-    }
-    @keyframes arm-punch {
-      0% { transform: rotate(0deg); }
-      50% { transform: rotate(-60deg); }
-      100% { transform: rotate(0deg); }
-    }
-
-    .leg-attack {
-      animation: leg-kick 0.3s forwards;
-    }
-    @keyframes leg-kick {
-      0% { transform: rotate(0deg); }
-      50% { transform: rotate(-45deg); }
-      100% { transform: rotate(0deg); }
+    canvas {
+      border: 2px solid #fff;
+      background-color: black;
     }
   </style>
 </head>
 <body>
-  <div id="game">
-    <div id="player1" class="fighter">
-      <div class="head"></div>
-      <div class="body"></div>
-      <div class="arm-left"></div>
-      <div class="arm-right"></div>
-      <div class="leg-left"></div>
-      <div class="leg-right"></div>
-    </div>
-
-    <div id="player2" class="fighter">
-      <div class="head"></div>
-      <div class="body"></div>
-      <div class="arm-left"></div>
-      <div class="arm-right"></div>
-      <div class="leg-left"></div>
-      <div class="leg-right"></div>
-    </div>
-
-    <div id="hitEffect1" class="hit-effect"></div>
-    <div id="hitEffect2" class="hit-effect"></div>
-
-    <div id="life1" class="life-bar"><div id="lifeFill1" class="life-fill"></div></div>
-    <div id="life2" class="life-bar"><div id="lifeFill2" class="life-fill"></div></div>
-  </div>
+  <canvas id="gameCanvas" width="640" height="480"></canvas>
 
   <script>
-    const p1 = document.getElementById("player1");
-    const p2 = document.getElementById("player2");
-    const lifeFill1 = document.getElementById("lifeFill1");
-    const lifeFill2 = document.getElementById("lifeFill2");
-    const hitEffect1 = document.getElementById("hitEffect1");
-    const hitEffect2 = document.getElementById("hitEffect2");
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-    let keys = {};
+    const personagem = new Image();
+    personagem.src = "corrida.png"; // Salve a imagem com esse nome na mesma pasta
 
-    let player1 = { pos: 100, vida: 100, jump: { vy: 0, vx: 0, y: 0, jumping: false } };
-    let player2 = { pos: window.innerWidth - 150, vida: 100, jump: { vy: 0, vx: 0, y: 0, jumping: false } };
+    const larguraFrame = 128; // largura de cada frame
+    const alturaFrame = 128; // altura de cada frame
+    const totalFrames = 4;   // total de quadros
+    let frameAtual = 0;      // qual quadro está agora
+    let contadorFrames = 0;
 
-    const gravity = 0.4;
-    const jumpSpeed = 20;
-    const airSpeed = 3;
+    let x = 100;
+    let y = 300;
+    let tecla = null;
 
-    document.addEventListener("keydown", e => {
-      keys[e.key.toLowerCase()] = true;
-      e.preventDefault();
+    // Controle de teclas
+    document.addEventListener("keydown", (e) => {
+      tecla = e.key;
     });
 
-    document.addEventListener("keyup", e => {
-      keys[e.key.toLowerCase()] = false;
-      e.preventDefault();
+    document.addEventListener("keyup", () => {
+      tecla = null;
+      frameAtual = 0; // volta pro frame inicial ao soltar a tecla
     });
 
-    function atacar(atacante, defensor, teclas, efeitos, golpes, playerElement) {
-      for (let i = 0; i < teclas.length; i++) {
-        if (keys[teclas[i]]) {
-          keys[teclas[i]] = false;
+    // Atualiza lógica do jogo
+    function atualizar() {
+      if (tecla === "ArrowRight") x += 4;
+      if (tecla === "ArrowLeft") x -= 4;
 
-          const distancia = Math.abs(atacante.pos - defensor.pos);
-          const alcance = golpes[i].alcance;
-          const dano = golpes[i].dano;
-
-          const isSoco = (i === 0 || i === 1);
-          const isChute = (i === 2 || i === 3);
-
-          if (isSoco) {
-            const arm = playerElement.querySelector(".arm-right");
-            arm.classList.add("arm-attack");
-            setTimeout(() => arm.classList.remove("arm-attack"), 300);
-          }
-          if (isChute) {
-            const leg = playerElement.querySelector(".leg-right");
-            leg.classList.add("leg-attack");
-            setTimeout(() => leg.classList.remove("leg-attack"), 300);
-          }
-
-          if (distancia < alcance) {
-            defensor.vida -= dano;
-            if (defensor.vida < 0) defensor.vida = 0;
-
-            efeitos.style.left = (defensor.pos + 10) + "px";
-            efeitos.style.bottom = (defensor.jump.y + 60) + "px";
-            efeitos.style.opacity = 1;
-            efeitos.style.transform = "scale(1.5)";
-            setTimeout(() => {
-              efeitos.style.opacity = 0;
-            }, 200);
-          }
+      // Atualiza frame se estiver andando
+      if (tecla === "ArrowRight" || tecla === "ArrowLeft") {
+        contadorFrames++;
+        if (contadorFrames % 6 === 0) {
+          frameAtual = (frameAtual + 1) % totalFrames;
         }
       }
     }
 
-    function update() {
-      // Movimento jogador 1
-      if (!player1.jump.jumping) {
-        if (keys["a"]) player1.pos -= 4;
-        if (keys["d"]) player1.pos += 4;
-      }
-      if (!player1.jump.jumping && keys["w"]) {
-        player1.jump.vy = jumpSpeed;
-        player1.jump.jumping = true;
-        player1.jump.vx = keys["d"] ? airSpeed : keys["a"] ? -airSpeed : 0;
-      }
-      if (player1.jump.jumping) {
-        player1.jump.vy -= gravity;
-        player1.jump.y += player1.jump.vy;
-        player1.pos += player1.jump.vx;
-        if (player1.jump.y <= 0) {
-          player1.jump.y = 0;
-          player1.jump.jumping = false;
-          player1.jump.vx = 0;
-        }
-        p1.style.bottom = player1.jump.y + "px";
-      }
+    // Desenha personagem na tela
+    function desenhar() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Movimento jogador 2
-      if (!player2.jump.jumping) {
-        if (keys["arrowleft"]) player2.pos -= 4;
-        if (keys["arrowright"]) player2.pos += 4;
-      }
-      if (!player2.jump.jumping && keys["arrowup"]) {
-        player2.jump.vy = jumpSpeed;
-        player2.jump.jumping = true;
-        player2.jump.vx = keys["arrowright"] ? airSpeed : keys["arrowleft"] ? -airSpeed : 0;
-      }
-      if (player2.jump.jumping) {
-        player2.jump.vy -= gravity;
-        player2.jump.y += player2.jump.vy;
-        player2.pos += player2.jump.vx;
-        if (player2.jump.y <= 0) {
-          player2.jump.y = 0;
-          player2.jump.jumping = false;
-          player2.jump.vx = 0;
-        }
-        p2.style.bottom = player2.jump.y + "px";
-      }
-
-      // Limites da tela
-      player1.pos = Math.max(0, Math.min(player1.pos, window.innerWidth - 50));
-      player2.pos = Math.max(0, Math.min(player2.pos, window.innerWidth - 50));
-
-      // Atualiza posições
-      p1.style.left = player1.pos + "px";
-      p2.style.left = player2.pos + "px";
-
-      // Ataques com distância e dano diferentes
-      atacar(
-        player1,
-        player2,
-        ["f", "g", "v", "b"],
-        hitEffect2,
-        [
-          { alcance: 40, dano: 5 },  // Soco fraco
-          { alcance: 50, dano: 10 }, // Soco forte
-          { alcance: 60, dano: 7 },  // Chute fraco
-          { alcance: 80, dano: 12 }  // Chute forte
-        ],
-        p1
+      ctx.drawImage(
+        personagem,
+        frameAtual * larguraFrame, 0,
+        larguraFrame, alturaFrame,
+        x, y,
+        larguraFrame, alturaFrame
       );
-      atacar(
-        player2,
-        player1,
-        ["1", "2", "3", "4"],
-        hitEffect1,
-        [
-          { alcance: 40, dano: 5 },
-          { alcance: 50, dano: 10 },
-          { alcance: 60, dano: 7 },
-          { alcance: 80, dano: 12 }
-        ],
-        p2
-      );
-
-      // Atualiza barras de vida
-      lifeFill1.style.width = player1.vida + "%";
-      lifeFill2.style.width = player2.vida + "%";
-
-      if (player1.vida <= 0 || player2.vida <= 0) {
-        alert(player1.vida <= 0 ? "Jogador 2 venceu!" : "Jogador 1 venceu!");
-        location.reload();
-      }
-
-      requestAnimationFrame(update);
     }
 
-    update();
+    // Loop principal
+    function loop() {
+      atualizar();
+      desenhar();
+      requestAnimationFrame(loop);
+    }
+
+    personagem.onload = loop;
   </script>
 </body>
 </html>
