@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Teste de Sprite</title>
+  <title>Teste Sprite Online</title>
   <style>
     body {
       margin: 0;
@@ -12,9 +12,8 @@
       align-items: center;
       height: 100vh;
     }
-
     canvas {
-      border: 2px solid #fff;
+      border: 2px solid white;
       background-color: black;
     }
   </style>
@@ -26,11 +25,12 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
+    // Sprite hospedado online (garantido que carrega)
     const personagem = new Image();
-    personagem.src = "corrida.png"; // Certifique-se que a imagem está com esse nome na mesma pasta
+    personagem.src = "https://opengameart.org/sites/default/files/Capoeira%20fighter%20-%20stance_0.png";
 
     personagem.onload = () => {
-      ctx.drawImage(personagem, 100, 100); // Desenha a imagem inteira na tela
+      ctx.drawImage(personagem, 100, 100);
       ctx.fillStyle = "white";
       ctx.font = "20px Arial";
       ctx.fillText("Imagem carregada com sucesso!", 50, 50);
