@@ -1,12 +1,13 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Jogo de Luta - Personagem Correndo</title>
+  <title>Teste de Sprite</title>
   <style>
     body {
       margin: 0;
-      background: #111;
+      background: #000;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -27,63 +28,20 @@
     const ctx = canvas.getContext("2d");
 
     const personagem = new Image();
-    personagem.src = "corrida.png"; // Salve a imagem com esse nome na mesma pasta
+    personagem.src = "corrida.png"; // Certifique-se que a imagem está com esse nome na mesma pasta
 
-    const larguraFrame = 128; // largura de cada frame
-    const alturaFrame = 128; // altura de cada frame
-    const totalFrames = 4;   // total de quadros
-    let frameAtual = 0;      // qual quadro está agora
-    let contadorFrames = 0;
+    personagem.onload = () => {
+      ctx.drawImage(personagem, 100, 100); // Desenha a imagem inteira na tela
+      ctx.fillStyle = "white";
+      ctx.font = "20px Arial";
+      ctx.fillText("Imagem carregada com sucesso!", 50, 50);
+    };
 
-    let x = 100;
-    let y = 300;
-    let tecla = null;
-
-    // Controle de teclas
-    document.addEventListener("keydown", (e) => {
-      tecla = e.key;
-    });
-
-    document.addEventListener("keyup", () => {
-      tecla = null;
-      frameAtual = 0; // volta pro frame inicial ao soltar a tecla
-    });
-
-    // Atualiza lógica do jogo
-    function atualizar() {
-      if (tecla === "ArrowRight") x += 4;
-      if (tecla === "ArrowLeft") x -= 4;
-
-      // Atualiza frame se estiver andando
-      if (tecla === "ArrowRight" || tecla === "ArrowLeft") {
-        contadorFrames++;
-        if (contadorFrames % 6 === 0) {
-          frameAtual = (frameAtual + 1) % totalFrames;
-        }
-      }
-    }
-
-    // Desenha personagem na tela
-    function desenhar() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.drawImage(
-        personagem,
-        frameAtual * larguraFrame, 0,
-        larguraFrame, alturaFrame,
-        x, y,
-        larguraFrame, alturaFrame
-      );
-    }
-
-    // Loop principal
-    function loop() {
-      atualizar();
-      desenhar();
-      requestAnimationFrame(loop);
-    }
-
-    personagem.onload = loop;
+    personagem.onerror = () => {
+      ctx.fillStyle = "red";
+      ctx.font = "20px Arial";
+      ctx.fillText("Erro ao carregar a imagem!", 50, 50);
+    };
   </script>
 </body>
 </html>
