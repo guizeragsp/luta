@@ -1,46 +1,144 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Teste Sprite Online</title>
+  <meta charset="UTF-8" />
+  <title>Jogo de Luta 2D - Animação de Corrida com Sprite</title>
   <style>
+    * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: #000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      background: #111;
+      overflow: hidden;
     }
-    canvas {
+    #game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(#333, #111);
+    }
+    .fighter {
+      width: 384px;  /* largura do frame */
+      height: 1024px; /* altura do frame */
+      position: absolute;
+      bottom: 0;
+      background-image: url('sua_imagem.png'); /* substitua pelo caminho da sua sprite */
+      background-repeat: no-repeat;
+      background-position: 0 0;
+      transition: background-position 0.1s;
+    }
+    #player1 {
+      left: 100px;
+      background-position: 0 0; /* frame parado */
+      filter: hue-rotate(200deg); /* só para diferenciar, pode tirar */
+    }
+    #player2 {
+      left: calc(100vw - 484px);
+      background-position: 0 0;
+      filter: hue-rotate(0deg);
+    }
+    .running {
+      animation: run 0.8s steps(4) infinite;
+    }
+    @keyframes run {
+      from { background-position: 0 0; }
+      to { background-position: -1536px 0; } /* anima os 4 frames na horizontal */
+    }
+
+    .life-bar {
+      position: absolute;
+      top: 20px;
+      width: 40%;
+      height: 20px;
+      background: #555;
       border: 2px solid white;
-      background-color: black;
+    }
+    .life-fill {
+      height: 100%;
+      background: limegreen;
+      transition: width 0.3s ease;
+    }
+    #life1 { left: 5%; }
+    #life2 { right: 5%; }
+
+    .hit-effect {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background: radial-gradient(circle, white, yellow, red);
+      border-radius: 50%;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 10;
     }
   </style>
 </head>
 <body>
-  <canvas id="gameCanvas" width="640" height="480"></canvas>
+  <div id="game">
+    <div id="player1" class="fighter"></div>
+    <div id="player2" class="fighter"></div>
+
+    <div id="hitEffect1" class="hit-effect"></div>
+    <div id="hitEffect2" class="hit-effect"></div>
+
+    <div id="life1" class="life-bar"><div id="lifeFill1" class="life-fill"></div></div>
+    <div id="life2" class="life-bar"><div id="lifeFill2" class="life-fill"></div></div>
+  </div>
 
   <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+    const p1 = document.getElementById("player1");
+    const p2 = document.getElementById("player2");
+    const lifeFill1 = document.getElementById("lifeFill1");
+    const lifeFill2 = document.getElementById("lifeFill2");
+    const hitEffect1 = document.getElementById("hitEffect1");
+    const hitEffect2 = document.getElementById("hitEffect2");
 
-    // Sprite hospedado online (garantido que carrega)
-    const personagem = new Image();
-    personagem.src = "https://opengameart.org/sites/default/files/Capoeira%20fighter%20-%20stance_0.png";
+    let keys = {};
 
-    personagem.onload = () => {
-      ctx.drawImage(personagem, 100, 100);
-      ctx.fillStyle = "white";
-      ctx.font = "20px Arial";
-      ctx.fillText("Imagem carregada com sucesso!", 50, 50);
-    };
+    let player1 = { pos: 100, vida: 100, jump: { vy: 0, vx: 0, y: 0, jumping: false } };
+    let player2 = { pos: window.innerWidth - 484, vida: 100, jump: { vy: 0, vx: 0, y: 0, jumping: false } };
 
-    personagem.onerror = () => {
-      ctx.fillStyle = "red";
-      ctx.font = "20px Arial";
-      ctx.fillText("Erro ao carregar a imagem!", 50, 50);
-    };
-  </script>
-</body>
-</html>
+    const gravity = 0.4;
+    const jumpSpeed = 20;
+    const airSpeed = 3;
+
+    document.addEventListener("keydown", e => {
+      keys[e.key.toLowerCase()] = true;
+      e.preventDefault();
+    });
+
+    document.addEventListener("keyup", e => {
+      keys[e.key.toLowerCase()] = false;
+      e.preventDefault();
+    });
+
+    function atacar(atacante, defensor, teclas, efeitos, golpes) {
+      for (let i = 0; i < teclas.length; i++) {
+        if (keys[teclas[i]]) {
+          keys[teclas[i]] = false;
+
+          const distancia = Math.abs(atacante.pos - defensor.pos);
+          const alcance = golpes[i].alcance;
+          const dano = golpes[i].dano;
+
+          if (distancia < alcance) {
+            defensor.vida -= dano;
+            if (defensor.vida < 0) defensor.vida = 0;
+
+            efeitos.style.left = (defensor.pos + 10) + "px";
+            efeitos.style.bottom = (defensor.jump.y + 60) + "px";
+            efeitos.style.opacity = 1;
+            efeitos.style.transform = "scale(1.5)";
+            setTimeout(() => {
+              efeitos.style.opacity = 0;
+            }, 200);
+          }
+        }
+      }
+    }
+
+    function update() {
+      // Movimento jogador 1
+      if (!player1.jump.jumping) {
+        if (keys["a"]) player1.pos -= 4;
+        if (keys["d"]) player1.pos
